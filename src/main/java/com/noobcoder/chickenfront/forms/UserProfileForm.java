@@ -1,30 +1,29 @@
-package com.noobcoder.chickenfront;
+package com.noobcoder.chickenfront.forms;
 
 import javax.swing.*;
 import java.awt.*;
 
-public class ContactUsForm extends JFrame {
+public class UserProfileForm extends JFrame {
     private JTextField nameField;
     private JTextField emailField;
-    private JTextArea messageField;
-    private JLabel confirmationLabel;
-    private JButton submitButton;
+    private JLabel messageLabel;
+    private JButton saveButton;
     private JButton backButton;
 
-    public ContactUsForm() {
-        setTitle("AMS - Contact Us");
+    public UserProfileForm() {
+        setTitle("AMS - User Profile");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(400, 400);
+        setSize(400, 300);
         setLocationRelativeTo(null);
         getContentPane().setBackground(new Color(15, 20, 22)); // #0F1416
 
         // Main panel with GridLayout
-        JPanel mainPanel = new JPanel(new GridLayout(6, 1, 20, 20));
+        JPanel mainPanel = new JPanel(new GridLayout(5, 1, 20, 20));
         mainPanel.setBackground(new Color(15, 20, 22));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Title Label
-        JLabel titleLabel = new JLabel("Contact Us", SwingConstants.CENTER);
+        JLabel titleLabel = new JLabel("User Profile", SwingConstants.CENTER);
         titleLabel.setForeground(Color.WHITE);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         mainPanel.add(titleLabel);
@@ -51,47 +50,32 @@ public class ContactUsForm extends JFrame {
         emailPanel.add(emailField);
         mainPanel.add(emailPanel);
 
-        // Message Panel
-        JPanel messagePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        messagePanel.setBackground(new Color(15, 20, 22));
-        JLabel messageLabel = new JLabel("Message:");
-        messageLabel.setForeground(Color.WHITE);
-        messageLabel.setFont(new Font("Arial", Font.PLAIN, 16));
-        messageField = new JTextArea(5, 15);
-        messageField.setLineWrap(true);
-        messageField.setWrapStyleWord(true);
-        JScrollPane messageScrollPane = new JScrollPane(messageField);
-        messagePanel.add(messageLabel);
-        messagePanel.add(messageScrollPane);
-        mainPanel.add(messagePanel);
-
         // Button Panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         buttonPanel.setBackground(new Color(15, 20, 22));
-        submitButton = new JButton("Submit");
-        ButtonEffects.applySlideOutEffect(submitButton);
-        submitButton.addActionListener(e -> submit());
+        saveButton = new JButton("Save Changes");
+        ButtonEffects.applySlideOutEffect(saveButton);
+        saveButton.addActionListener(e -> saveProfile());
         backButton = new JButton("Back to Home");
         ButtonEffects.applySlideOutEffect(backButton);
         backButton.addActionListener(e -> goToHome());
-        buttonPanel.add(submitButton);
+        buttonPanel.add(saveButton);
         buttonPanel.add(backButton);
         mainPanel.add(buttonPanel);
 
-        // Confirmation Label
-        confirmationLabel = new JLabel("", SwingConstants.CENTER);
-        confirmationLabel.setForeground(Color.WHITE);
-        confirmationLabel.setFont(new Font("Arial", Font.PLAIN, 16));
-        mainPanel.add(confirmationLabel);
+        // Message Label
+        messageLabel = new JLabel("", SwingConstants.CENTER);
+        messageLabel.setForeground(Color.WHITE);
+        messageLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        mainPanel.add(messageLabel);
 
         add(mainPanel);
     }
 
-    private void submit() {
+    private void saveProfile() {
         String name = nameField.getText();
         String email = emailField.getText();
-        String message = messageField.getText();
-        confirmationLabel.setText("Message submitted by: " + name);
+        messageLabel.setText("Profile update attempted for: " + email);
     }
 
     private void goToHome() {
@@ -100,6 +84,6 @@ public class ContactUsForm extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new ContactUsForm().setVisible(true));
+        SwingUtilities.invokeLater(() -> new UserProfileForm().setVisible(true));
     }
 }

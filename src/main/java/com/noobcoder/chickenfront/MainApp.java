@@ -1,5 +1,7 @@
 package com.noobcoder.chickenfront;
 
+import com.noobcoder.chickenfront.forms.LoginForm;
+
 import javax.swing.*;
 
 public class MainApp {

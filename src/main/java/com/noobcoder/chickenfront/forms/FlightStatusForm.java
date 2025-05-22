@@ -1,4 +1,4 @@
-package com.noobcoder.chickenfront;
+package com.noobcoder.chickenfront.forms;
 
 
 import javax.swing.*;

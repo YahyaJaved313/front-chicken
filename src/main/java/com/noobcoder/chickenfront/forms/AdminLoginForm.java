@@ -1,37 +1,39 @@
-package com.noobcoder.chickenfront;
+package com.noobcoder.chickenfront.forms;
+
+import com.noobcoder.chickenfront.forms.AdminDashboardForm;
+import com.noobcoder.chickenfront.forms.LoginForm;
+import com.noobcoder.chickenfront.util.HttpClientUtil;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.net.http.HttpResponse;
 
-public class LoginForm extends JFrame {
+public class AdminLoginForm extends JFrame {
     private JTextField usernameField;
     private JPasswordField passwordField;
     private JLabel messageLabel;
+    private JButton loginButton;
+    private JButton backButton;
 
-    public LoginForm() {
-        setTitle("AMS - Login");
+    public AdminLoginForm() {
+        setTitle("AMS - Admin Login");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(400, 350); // Adjusted for extra button
+        setSize(400, 300);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(new Color(15, 20, 22)); // #0F1416
+        getContentPane().setBackground(new Color(15, 20, 22));
 
-        // Main panel with GridLayout
         JPanel mainPanel = new JPanel(new GridLayout(5, 1, 20, 20));
         mainPanel.setBackground(new Color(15, 20, 22));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Title Label
-        JLabel titleLabel = new JLabel("Login", SwingConstants.CENTER);
+        JLabel titleLabel = new JLabel("Admin Login", SwingConstants.CENTER);
         titleLabel.setForeground(Color.WHITE);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         mainPanel.add(titleLabel);
 
-        // Username Panel
         JPanel usernamePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         usernamePanel.setBackground(new Color(15, 20, 22));
-        JLabel usernameLabel = new JLabel("Username:");
+        JLabel usernameLabel = new JLabel("Email:");
         usernameLabel.setForeground(Color.WHITE);
         usernameLabel.setFont(new Font("Arial", Font.PLAIN, 16));
         usernameField = new JTextField(15);
@@ -39,7 +41,6 @@ public class LoginForm extends JFrame {
         usernamePanel.add(usernameField);
         mainPanel.add(usernamePanel);
 
-        // Password Panel
         JPanel passwordPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         passwordPanel.setBackground(new Color(15, 20, 22));
         JLabel passwordLabel = new JLabel("Password:");
@@ -50,28 +51,19 @@ public class LoginForm extends JFrame {
         passwordPanel.add(passwordField);
         mainPanel.add(passwordPanel);
 
-        // Button Panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         buttonPanel.setBackground(new Color(15, 20, 22));
-        JButton loginButton = new JButton("Login");
+        loginButton = new JButton("Login");
         ButtonEffects.applySlideOutEffect(loginButton);
         loginButton.addActionListener(e -> login());
-        JButton adminLoginButton = new JButton("Admin Login");
-        ButtonEffects.applySlideOutEffect(adminLoginButton);
-        adminLoginButton.addActionListener(e -> {
-            dispose();
-            new AdminLoginForm().setVisible(true);
-        });
-        JButton registerButton = new JButton("Register");
-        ButtonEffects.applySlideOutEffect(registerButton);
-        registerButton.addActionListener(e -> goToRegister());
+        backButton = new JButton("Back to Login");
+        ButtonEffects.applySlideOutEffect(backButton);
+        backButton.addActionListener(e -> goToLogin());
         buttonPanel.add(loginButton);
-        buttonPanel.add(adminLoginButton);
-        buttonPanel.add(registerButton);
+        buttonPanel.add(backButton);
         mainPanel.add(buttonPanel);
 
-        // Message Label
-        messageLabel = new JLabel("Log in or register to continue.", SwingConstants.CENTER);
+        messageLabel = new JLabel("", SwingConstants.CENTER);
         messageLabel.setForeground(Color.WHITE);
         messageLabel.setFont(new Font("Arial", Font.PLAIN, 16));
         mainPanel.add(messageLabel);
@@ -80,24 +72,36 @@ public class LoginForm extends JFrame {
     }
 
     private void login() {
-        String username = usernameField.getText();
+        String email = usernameField.getText();
         String password = new String(passwordField.getPassword());
-        if (!username.isEmpty() && !password.isEmpty()) {
-            messageLabel.setText("Login successful for: " + username);
-            dispose();
-            new HomeForm().setVisible(true);
-        } else {
-            messageLabel.setText("Please enter username and password.");
+        if (email.isEmpty() || password.isEmpty()) {
+            messageLabel.setText("Please enter email and password.");
+            return;
+        }
+
+        try {
+            HttpClientUtil.setAuthCredentials(email, password);
+            HttpResponse<String> response = HttpClientUtil.sendGetRequest("/admin/flights");
+            if (response.statusCode() == 200) {
+                messageLabel.setText("Admin login successful!");
+                dispose();
+                new AdminDashboardForm().setVisible(true);
+            } else {
+                messageLabel.setText("Admin login failed: Invalid credentials or insufficient permissions.");
+                HttpClientUtil.clearAuthCredentials();
+            }
+        } catch (Exception e) {
+            messageLabel.setText("Error: " + e.getMessage());
+            HttpClientUtil.clearAuthCredentials();
         }
     }
 
-    private void goToRegister() {
+    private void goToLogin() {
         dispose();
-        new RegisterForm(this).setVisible(true);
+        new LoginForm().setVisible(true);
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new LoginForm().setVisible(true));
+        SwingUtilities.invokeLater(() -> new AdminLoginForm().setVisible(true));
     }
 }
-

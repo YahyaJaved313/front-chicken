@@ -1,15 +1,23 @@
-package com.noobcoder.chickenfront;
+package com.noobcoder.chickenfront.forms;
+
+import com.noobcoder.chickenfront.util.HttpClientUtil;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.Date;
-import javax.swing.SpinnerDateModel;
+import javax.swing.table.DefaultTableModel;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.net.http.HttpResponse;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class FlightSearchForm extends JFrame {
     private JTextField departureField;
     private JTextField destinationField;
     private JSpinner datePicker;
     private JTable flightTable;
+    private DefaultTableModel tableModel;
     private JButton searchButton;
     private JButton backButton;
 
@@ -18,20 +26,17 @@ public class FlightSearchForm extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(600, 400);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(new Color(15, 20, 22)); // #0F1416
+        getContentPane().setBackground(new Color(15, 20, 22));
 
-        // Main panel with GridLayout
         JPanel mainPanel = new JPanel(new GridLayout(4, 1, 20, 20));
         mainPanel.setBackground(new Color(15, 20, 22));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Title Label
         JLabel titleLabel = new JLabel("Search Flights", SwingConstants.CENTER);
         titleLabel.setForeground(Color.WHITE);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         mainPanel.add(titleLabel);
 
-        // Input Panel
         JPanel inputPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         inputPanel.setBackground(new Color(15, 20, 22));
         JLabel departureLabel = new JLabel("Departure:");
@@ -60,15 +65,13 @@ public class FlightSearchForm extends JFrame {
         inputPanel.add(searchButton);
         mainPanel.add(inputPanel);
 
-        // Flight Table
-        String[] columns = {"Flight Number", "Departure", "Destination", "Date", "Time"};
-        Object[][] data = {}; // Placeholder data
-        flightTable = new JTable(data, columns);
-        flightTable.setBackground(new Color(255, 255, 255, 13)); // rgba(255, 255, 255, 0.05)
+        String[] columns = {"Flight Number", "Departure", "Destination", "Date", "Dep Time", "Arr Time"};
+        tableModel = new DefaultTableModel(columns, 0);
+        flightTable = new JTable(tableModel);
+        flightTable.setBackground(new Color(255, 255, 255, 13));
         JScrollPane tableScrollPane = new JScrollPane(flightTable);
         mainPanel.add(tableScrollPane);
 
-        // Back Button
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         buttonPanel.setBackground(new Color(15, 20, 22));
         backButton = new JButton("Back to Home");
@@ -84,7 +87,41 @@ public class FlightSearchForm extends JFrame {
         String departure = departureField.getText();
         String destination = destinationField.getText();
         Date date = (Date) datePicker.getValue();
-        JOptionPane.showMessageDialog(this, "Searching flights from " + departure + " to " + destination);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        try {
+            HttpResponse<String> response = HttpClientUtil.sendGetRequest("/flights");
+            if (response.statusCode() == 200) {
+                JSONArray flights = new JSONArray(response.body());
+                tableModel.setRowCount(0);
+                DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+                for (int i = 0; i < flights.length(); i++) {
+                    JSONObject flight = flights.getJSONObject(i);
+                    String flightDeparture = flight.getString("origin");
+                    String flightDestination = flight.getString("destination");
+                    String flightDate = LocalDateTime.parse(flight.getString("departureTime")).toLocalDate().toString();
+                    if ((departure.isEmpty() || flightDeparture.equalsIgnoreCase(departure)) &&
+                            (destination.isEmpty() || flightDestination.equalsIgnoreCase(destination)) &&
+                            (date == null || flightDate.equals(formatter.format(date.toInstant())))) {
+                        tableModel.addRow(new Object[]{
+                                flight.getString("flightNumber"),
+                                flightDeparture,
+                                flightDestination,
+                                flightDate,
+                                LocalDateTime.parse(flight.getString("departureTime")).format(timeFormatter),
+                                LocalDateTime.parse(flight.getString("arrivalTime")).format(timeFormatter)
+                        });
+                    }
+                }
+                if (tableModel.getRowCount() == 0) {
+                    JOptionPane.showMessageDialog(this, "No flights found for the given criteria.");
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to fetch flights: " + response.body());
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+        }
     }
 
     private void goToHome() {
@@ -96,4 +133,3 @@ public class FlightSearchForm extends JFrame {
         SwingUtilities.invokeLater(() -> new FlightSearchForm().setVisible(true));
     }
 }
-
