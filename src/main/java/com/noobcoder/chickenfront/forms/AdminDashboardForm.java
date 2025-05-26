@@ -1,286 +1,230 @@
 package com.noobcoder.chickenfront.forms;
 
-import com.noobcoder.chickenfront.util.HttpClientUtil;
+import com.noobcoder.chickenfront.forms.HomeForm;
+import com.noobcoder.chickenfront.forms.ButtonEffects;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.net.http.HttpResponse;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import java.net.URI;
+import java.net.http.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 
 public class AdminDashboardForm extends JFrame {
     private JTable flightTable;
     private DefaultTableModel tableModel;
     private JLabel messageLabel;
-    private JButton addFlightButton;
-    private JButton modifyFlightButton;
-    private JButton deleteFlightButton;
-    private JButton backButton;
 
     public AdminDashboardForm() {
+        HttpClientUtil.setAuthCredentials("admin@example.com", "admin123");
+
         setTitle("AMS - Admin Dashboard");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(600, 400);
+        setSize(700, 500);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(new Color(15, 20, 22));
 
-        JPanel mainPanel = new JPanel(new GridLayout(5, 1, 20, 20));
+        JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(new Color(15, 20, 22));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        JLabel titleLabel = new JLabel("Admin Dashboard", SwingConstants.CENTER);
-        titleLabel.setForeground(Color.WHITE);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        mainPanel.add(titleLabel);
-
-        JLabel flightLabel = new JLabel("Flight Management", SwingConstants.CENTER);
-        flightLabel.setForeground(Color.WHITE);
-        flightLabel.setFont(new Font("Arial", Font.PLAIN, 18));
-        mainPanel.add(flightLabel);
-
-        String[] columns = {"Flight Number", "Departure", "Destination", "Date", "Dep Time", "Arr Time"};
+        String[] columns = {"Flight Number", "Origin", "Destination", "Date", "Departure", "Arrival"};
         tableModel = new DefaultTableModel(columns, 0);
         flightTable = new JTable(tableModel);
-        flightTable.setBackground(new Color(255, 255, 255, 13));
-        JScrollPane tableScrollPane = new JScrollPane(flightTable);
-        mainPanel.add(tableScrollPane);
+        JScrollPane tablePane = new JScrollPane(flightTable);
+        mainPanel.add(tablePane, BorderLayout.CENTER);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        buttonPanel.setBackground(new Color(15, 20, 22));
-
-        addFlightButton = new JButton("Add Flight");
-        ButtonEffects.applySlideOutEffect(addFlightButton);
-        addFlightButton.addActionListener(e -> addFlight());
-
-        modifyFlightButton = new JButton("Modify Flight");
-        ButtonEffects.applySlideOutEffect(modifyFlightButton);
-        modifyFlightButton.addActionListener(e -> modifyFlight());
-
-        deleteFlightButton = new JButton("Delete Flight");
-        ButtonEffects.applySlideOutEffect(deleteFlightButton);
-        deleteFlightButton.addActionListener(e -> deleteFlight());
-
-        backButton = new JButton("Back to Home");
-        ButtonEffects.applySlideOutEffect(backButton);
-        backButton.addActionListener(e -> goToHome());
-
-        buttonPanel.add(addFlightButton);
-        buttonPanel.add(modifyFlightButton);
-        buttonPanel.add(deleteFlightButton);
-        buttonPanel.add(backButton);
-        mainPanel.add(buttonPanel);
-
-        messageLabel = new JLabel("", SwingConstants.CENTER);
+        messageLabel = new JLabel(" ", SwingConstants.CENTER);
         messageLabel.setForeground(Color.WHITE);
-        messageLabel.setFont(new Font("Arial", Font.PLAIN, 16));
-        mainPanel.add(messageLabel);
+        mainPanel.add(messageLabel, BorderLayout.SOUTH);
 
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setBackground(new Color(15, 20, 22));
+        String[] actions = {"Add Flight", "Modify Flight", "Delete Flight", "Back to Home"};
+        for (String action : actions) {
+            JButton btn = new JButton(action);
+            ButtonEffects.applySlideOutEffect(btn);
+            buttonPanel.add(btn);
+
+            switch (action) {
+                case "Add Flight" -> btn.addActionListener(e -> addOrModifyFlight(false));
+                case "Modify Flight" -> btn.addActionListener(e -> addOrModifyFlight(true));
+                case "Delete Flight" -> btn.addActionListener(e -> deleteFlight());
+                case "Back to Home" -> btn.addActionListener(e -> {
+                    dispose();
+                    HttpClientUtil.clearAuthCredentials();
+                    new HomeForm().setVisible(true);
+                });
+            }
+        }
+
+        mainPanel.add(buttonPanel, BorderLayout.NORTH);
         add(mainPanel);
         loadFlights();
     }
 
     private void loadFlights() {
         try {
-            HttpResponse<String> response = HttpClientUtil.sendGetRequest("/admin/flights");
-            if (response.statusCode() == 200) {
-                JSONArray flights = new JSONArray(response.body());
-                tableModel.setRowCount(0); // Clear existing rows
-                DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+            HttpResponse<String> res = HttpClientUtil.sendGetRequest("/api/admin/flights");
+            if (res.statusCode() == 200) {
+                tableModel.setRowCount(0);
+                JSONArray flights = new JSONArray(res.body());
+                DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm");
                 for (int i = 0; i < flights.length(); i++) {
-                    JSONObject flight = flights.getJSONObject(i);
+                    JSONObject f = flights.getJSONObject(i);
+                    LocalDateTime dep = LocalDateTime.parse(f.getString("departureTime"));
+                    LocalDateTime arr = LocalDateTime.parse(f.getString("arrivalTime"));
                     tableModel.addRow(new Object[]{
-                            flight.getString("flightNumber"),
-                            flight.getString("origin"),
-                            flight.getString("destination"),
-                            LocalDateTime.parse(flight.getString("departureTime")).toLocalDate(),
-                            LocalDateTime.parse(flight.getString("departureTime")).format(timeFormatter),
-                            LocalDateTime.parse(flight.getString("arrivalTime")).format(timeFormatter)
+                            f.getString("flightNumber"),
+                            f.getString("origin"),
+                            f.getString("destination"),
+                            dep.toLocalDate().toString(),
+                            dep.format(fmt),
+                            arr.format(fmt)
                     });
                 }
+                messageLabel.setText("Flights loaded: " + flights.length());
             } else {
-                messageLabel.setText("Failed to load flights: " + response.body());
+                messageLabel.setText("Failed to load flights: " + res.statusCode());
             }
         } catch (Exception e) {
-            messageLabel.setText("Error: " + e.getMessage());
+            e.printStackTrace();
+            messageLabel.setText("Error loading flights.");
         }
     }
 
-    private void addFlight() {
-        JTextField flightNumberField = new JTextField(10);
-        JTextField departureField = new JTextField(10);
-        JTextField destinationField = new JTextField(10);
-        JTextField dateField = new JTextField(10);
-        JTextField departureTimeField = new JTextField(10);
-        JTextField arrivalTimeField = new JTextField(10);
-        JTextField totalSeatsField = new JTextField(10);
-        JTextField availableSeatsField = new JTextField(10);
-
-        JPanel dialogPanel = new JPanel(new GridLayout(8, 2, 10, 10));
-        dialogPanel.add(new JLabel("Flight Number:"));
-        dialogPanel.add(flightNumberField);
-        dialogPanel.add(new JLabel("Departure:"));
-        dialogPanel.add(departureField);
-        dialogPanel.add(new JLabel("Destination:"));
-        dialogPanel.add(destinationField);
-        dialogPanel.add(new JLabel("Date (YYYY-MM-DD):"));
-        dialogPanel.add(dateField);
-        dialogPanel.add(new JLabel("Departure Time (HH:MM):"));
-        dialogPanel.add(departureTimeField);
-        dialogPanel.add(new JLabel("Arrival Time (HH:MM):"));
-        dialogPanel.add(arrivalTimeField);
-        dialogPanel.add(new JLabel("Total Seats:"));
-        dialogPanel.add(totalSeatsField);
-        dialogPanel.add(new JLabel("Available Seats:"));
-        dialogPanel.add(availableSeatsField);
-
-        int result = JOptionPane.showConfirmDialog(this, dialogPanel, "Add Flight", JOptionPane.OK_CANCEL_OPTION);
-        if (result == JOptionPane.OK_OPTION) {
-            String flightNumber = flightNumberField.getText();
-            String departure = departureField.getText();
-            String destination = destinationField.getText();
-            String date = dateField.getText();
-            String departureTime = departureTimeField.getText();
-            String arrivalTime = arrivalTimeField.getText();
-            String totalSeats = totalSeatsField.getText();
-            String availableSeats = availableSeatsField.getText();
-
-            if (flightNumber.isEmpty() || departure.isEmpty() || destination.isEmpty() || date.isEmpty() ||
-                    departureTime.isEmpty() || arrivalTime.isEmpty() || totalSeats.isEmpty() || availableSeats.isEmpty()) {
-                messageLabel.setText("Please fill in all fields.");
-                return;
-            }
-
-            try {
-                JSONObject flight = new JSONObject();
-                flight.put("flightNumber", flightNumber);
-                flight.put("origin", departure);
-                flight.put("destination", destination);
-                flight.put("departureTime", date + "T" + departureTime + ":00");
-                flight.put("arrivalTime", date + "T" + arrivalTime + ":00");
-                flight.put("totalSeats", Integer.parseInt(totalSeats));
-                flight.put("availableSeats", Integer.parseInt(availableSeats));
-
-                HttpResponse<String> response = HttpClientUtil.sendPostRequest("/admin/flights", flight.toString());
-                if (response.statusCode() == 200) {
-                    messageLabel.setText("Flight added successfully!");
-                    loadFlights();
-                } else {
-                    messageLabel.setText("Failed to add flight: " + response.body());
-                }
-            } catch (Exception e) {
-                messageLabel.setText("Error: " + e.getMessage());
-            }
-        }
-    }
-
-    private void modifyFlight() {
-        int selectedRow = flightTable.getSelectedRow();
-        if (selectedRow == -1) {
-            messageLabel.setText("Please select a flight to modify.");
+    private void addOrModifyFlight(boolean isModify) {
+        int row = isModify ? flightTable.getSelectedRow() : -1;
+        if (isModify && row == -1) {
+            messageLabel.setText("Select a flight to modify.");
             return;
         }
 
-        JTextField flightNumberField = new JTextField((String) tableModel.getValueAt(selectedRow, 0), 10);
-        JTextField departureField = new JTextField((String) tableModel.getValueAt(selectedRow, 1), 10);
-        JTextField destinationField = new JTextField((String) tableModel.getValueAt(selectedRow, 2), 10);
-        JTextField dateField = new JTextField((String) tableModel.getValueAt(selectedRow, 3), 10);
-        JTextField departureTimeField = new JTextField((String) tableModel.getValueAt(selectedRow, 4), 10);
-        JTextField arrivalTimeField = new JTextField((String) tableModel.getValueAt(selectedRow, 5), 10);
-        JTextField totalSeatsField = new JTextField(10);
-        JTextField availableSeatsField = new JTextField(10);
+        JTextField flightNumberField = new JTextField(isModify ? tableModel.getValueAt(row, 0).toString() : "", 10);
+        JTextField originField = new JTextField(isModify ? tableModel.getValueAt(row, 1).toString() : "", 10);
+        JTextField destinationField = new JTextField(isModify ? tableModel.getValueAt(row, 2).toString() : "", 10);
+        JTextField dateField = new JTextField(isModify ? tableModel.getValueAt(row, 3).toString() : "", 10);
+        JTextField depTimeField = new JTextField(isModify ? tableModel.getValueAt(row, 4).toString() : "", 10);
+        JTextField arrTimeField = new JTextField(isModify ? tableModel.getValueAt(row, 5).toString() : "", 10);
 
-        JPanel dialogPanel = new JPanel(new GridLayout(8, 2, 10, 10));
-        dialogPanel.add(new JLabel("Flight Number:"));
-        dialogPanel.add(flightNumberField);
-        dialogPanel.add(new JLabel("Departure:"));
-        dialogPanel.add(departureField);
-        dialogPanel.add(new JLabel("Destination:"));
-        dialogPanel.add(destinationField);
-        dialogPanel.add(new JLabel("Date (YYYY-MM-DD):"));
-        dialogPanel.add(dateField);
-        dialogPanel.add(new JLabel("Departure Time (HH:MM):"));
-        dialogPanel.add(departureTimeField);
-        dialogPanel.add(new JLabel("Arrival Time (HH:MM):"));
-        dialogPanel.add(arrivalTimeField);
-        dialogPanel.add(new JLabel("Total Seats:"));
-        dialogPanel.add(totalSeatsField);
-        dialogPanel.add(new JLabel("Available Seats:"));
-        dialogPanel.add(availableSeatsField);
+        JPanel panel = new JPanel(new GridLayout(6, 2));
+        panel.add(new JLabel("Flight #:")); panel.add(flightNumberField);
+        panel.add(new JLabel("Origin:")); panel.add(originField);
+        panel.add(new JLabel("Destination:")); panel.add(destinationField);
+        panel.add(new JLabel("Date (YYYY-MM-DD):")); panel.add(dateField);
+        panel.add(new JLabel("Departure Time (HH:MM):")); panel.add(depTimeField);
+        panel.add(new JLabel("Arrival Time (HH:MM):")); panel.add(arrTimeField);
 
-        int result = JOptionPane.showConfirmDialog(this, dialogPanel, "Modify Flight", JOptionPane.OK_CANCEL_OPTION);
+        int result = JOptionPane.showConfirmDialog(this, panel, (isModify ? "Modify" : "Add") + " Flight", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
-            String flightNumber = flightNumberField.getText();
-            String departure = departureField.getText();
-            String destination = destinationField.getText();
-            String date = dateField.getText();
-            String departureTime = departureTimeField.getText();
-            String arrivalTime = arrivalTimeField.getText();
-            String totalSeats = totalSeatsField.getText();
-            String availableSeats = availableSeatsField.getText();
-
-            if (flightNumber.isEmpty() || departure.isEmpty() || destination.isEmpty() || date.isEmpty() ||
-                    departureTime.isEmpty() || arrivalTime.isEmpty() || totalSeats.isEmpty() || availableSeats.isEmpty()) {
-                messageLabel.setText("Please fill in all fields.");
-                return;
-            }
-
             try {
-                JSONObject flight = new JSONObject();
-                flight.put("flightNumber", flightNumber);
-                flight.put("origin", departure);
-                flight.put("destination", destination);
-                flight.put("departureTime", date + "T" + departureTime + ":00");
-                flight.put("arrivalTime", date + "T" + arrivalTime + ":00");
-                flight.put("totalSeats", Integer.parseInt(totalSeats));
-                flight.put("availableSeats", Integer.parseInt(availableSeats));
+                String dtDep = dateField.getText() + "T" + depTimeField.getText() + ":00";
+                String dtArr = dateField.getText() + "T" + arrTimeField.getText() + ":00";
+                JSONObject json = new JSONObject()
+                        .put("flightNumber", flightNumberField.getText())
+                        .put("origin", originField.getText())
+                        .put("destination", destinationField.getText())
+                        .put("departureTime", dtDep)
+                        .put("arrivalTime", dtArr);
 
-                HttpResponse<String> response = HttpClientUtil.sendPutRequest("/admin/flights/" + flightNumber, flight.toString());
-                if (response.statusCode() == 200) {
-                    messageLabel.setText("Flight modified successfully!");
-                    loadFlights();
+                if (isModify) {
+                    HttpResponse<String> getResp = HttpClientUtil.sendGetRequest("/api/admin/flights/" + flightNumberField.getText());
+                    JSONObject existing = new JSONObject(getResp.body());
+                    json.put("totalSeats", existing.getInt("totalSeats"));
+                    json.put("availableSeats", existing.getInt("availableSeats"));
+
+                    HttpResponse<String> putResp = HttpClientUtil.sendPutRequest("/api/admin/flights/" + flightNumberField.getText(), json.toString());
+                    messageLabel.setText(putResp.statusCode() == 200 ? "Modified successfully." : "Modify failed.");
                 } else {
-                    messageLabel.setText("Failed to modify flight: " + response.body());
+                    json.put("totalSeats", 100);
+                    json.put("availableSeats", 100);
+                    HttpResponse<String> postResp = HttpClientUtil.sendPostRequest("/api/admin/flights", json.toString());
+                    messageLabel.setText(postResp.statusCode() == 200 ? "Added successfully." : "Add failed.");
                 }
+                loadFlights();
             } catch (Exception e) {
-                messageLabel.setText("Error: " + e.getMessage());
+                e.printStackTrace();
+                messageLabel.setText("Error processing flight.");
             }
         }
     }
 
     private void deleteFlight() {
-        int selectedRow = flightTable.getSelectedRow();
-        if (selectedRow == -1) {
-            messageLabel.setText("Please select a flight to delete.");
+        int row = flightTable.getSelectedRow();
+        if (row == -1) {
+            messageLabel.setText("Select a flight to delete.");
             return;
         }
-
-        String flightNumber = (String) tableModel.getValueAt(selectedRow, 0);
-        int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete flight " + flightNumber + "?", "Confirm Deletion", JOptionPane.YES_NO_OPTION);
+        String fn = tableModel.getValueAt(row, 0).toString();
+        int confirm = JOptionPane.showConfirmDialog(this, "Delete flight " + fn + "?", "Confirm", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
             try {
-                HttpResponse<String> response = HttpClientUtil.sendDeleteRequest("/admin/flights/" + flightNumber);
-                if (response.statusCode() == 200) {
-                    messageLabel.setText("Flight deleted successfully!");
-                    loadFlights();
-                } else {
-                    messageLabel.setText("Failed to delete flight: " + response.body());
-                }
+                HttpResponse<String> res = HttpClientUtil.sendDeleteRequest("/api/admin/flights/" + fn);
+                messageLabel.setText(res.statusCode() == 200 ? "Deleted successfully." : "Delete failed.");
+                loadFlights();
             } catch (Exception e) {
-                messageLabel.setText("Error: " + e.getMessage());
+                e.printStackTrace();
+                messageLabel.setText("Delete error.");
             }
         }
     }
 
-    private void goToHome() {
-        dispose();
-        HttpClientUtil.clearAuthCredentials();
-        new HomeForm().setVisible(true);
-    }
-
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new AdminDashboardForm().setVisible(true));
+    }
+
+    // ✅ Embedded HttpClientUtil class
+    private static class HttpClientUtil {
+        private static String baseUrl = "http://localhost:8080";
+        private static String authHeader = "";
+
+        public static void setAuthCredentials(String email, String password) {
+            String encoded = Base64.getEncoder().encodeToString((email + ":" + password).getBytes());
+            authHeader = "Basic " + encoded;
+        }
+
+        public static void clearAuthCredentials() {
+            authHeader = "";
+        }
+
+        public static HttpResponse<String> sendGetRequest(String path) throws Exception {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(new URI(baseUrl + path))
+                    .GET()
+                    .header("Authorization", authHeader)
+                    .build();
+            return HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
+        }
+
+        public static HttpResponse<String> sendPostRequest(String path, String body) throws Exception {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(new URI(baseUrl + path))
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", authHeader)
+                    .build();
+            return HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
+        }
+
+        public static HttpResponse<String> sendPutRequest(String path, String body) throws Exception {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(new URI(baseUrl + path))
+                    .PUT(HttpRequest.BodyPublishers.ofString(body))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", authHeader)
+                    .build();
+            return HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
+        }
+
+        public static HttpResponse<String> sendDeleteRequest(String path) throws Exception {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(new URI(baseUrl + path))
+                    .DELETE()
+                    .header("Authorization", authHeader)
+                    .build();
+            return HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
+        }
     }
 }
