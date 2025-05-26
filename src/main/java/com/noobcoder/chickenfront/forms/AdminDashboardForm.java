@@ -277,7 +277,7 @@ public class AdminDashboardForm extends JFrame {
     private void goToHome() {
         dispose();
         HttpClientUtil.clearAuthCredentials();
-        new HomeForm().setVisible(true);
+        new AirlineReservationDashboard().setVisible(true);
     }
 
     public static void main(String[] args) {
