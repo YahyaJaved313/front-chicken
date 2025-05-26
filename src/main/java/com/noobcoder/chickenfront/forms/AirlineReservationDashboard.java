@@ -8,14 +8,18 @@ import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.RoundRectangle2D;
+import java.net.http.HttpResponse;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import com.noobcoder.chickenfront.util.HttpClientUtil;
 
 public class AirlineReservationDashboard extends JFrame {
     private JPanel sidebarPanel;
     private JPanel mainPanel;
     private JPanel contentPanel;
-    private JPanel headerPanel; // Now a field
+    private JPanel headerPanel;
     private boolean sidebarVisible = true;
-    private Timer slideTimer;
+    private javax.swing.Timer slideTimer;
     private int sidebarTargetWidth = 250;
     private int sidebarCollapsedWidth = 50;
     private int sidebarCurrentWidth = 250;
@@ -80,7 +84,7 @@ public class AirlineReservationDashboard extends JFrame {
 
         headerPanel = new JPanel(new BorderLayout());
         headerPanel.setOpaque(false);
-        headerPanel.setBorder(new EmptyBorder(10, 10, 10, 10)); // default open
+        headerPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         hmLabel = new JLabel("H&M");
         hmLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
@@ -104,7 +108,7 @@ public class AirlineReservationDashboard extends JFrame {
     }
 
     private void updateHamburgerMargin() {
-        int leftPad = sidebarVisible ? 10 : 14; // 4px more when closed
+        int leftPad = sidebarVisible ? 10 : 14;
         headerPanel.setBorder(new EmptyBorder(10, leftPad, 10, 10));
         headerPanel.revalidate();
         headerPanel.repaint();
@@ -147,7 +151,7 @@ public class AirlineReservationDashboard extends JFrame {
             panel.add(btn);
             panel.add(Box.createVerticalStrut(25));
         }
-        panel.remove(panel.getComponentCount() - 1); // Remove last strut
+        panel.remove(panel.getComponentCount() - 1);
         return panel;
     }
 
@@ -229,8 +233,7 @@ public class AirlineReservationDashboard extends JFrame {
         tableTitle.setForeground(DARK_BLUE);
         tableTitle.setBorder(new EmptyBorder(0, 0, 20, 0));
 
-        String[] columns = {"Flight Number", "Departure Location", "Departure Time",
-                "Arrival Location", "Arrival Time"};
+        String[] columns = {"Flight Number", "Departure Time", "Arrival Time", "Origin", "Destination"};
 
         DefaultTableModel model = new DefaultTableModel(columns, 0) {
             @Override
@@ -294,18 +297,30 @@ public class AirlineReservationDashboard extends JFrame {
     private void populateFlightData() {
         if (flightTable != null) {
             DefaultTableModel model = (DefaultTableModel) flightTable.getModel();
+            model.setRowCount(0); // Clear existing rows
 
-            Object[][] data = {
-                    {"AA101", "New York (JFK)", "08:00 AM", "Los Angeles (LAX)", "11:30 AM"},
-                    {"DL205", "Chicago (ORD)", "09:15 AM", "Miami (MIA)", "12:45 PM"},
-                    {"UA308", "San Francisco (SFO)", "10:30 AM", "Seattle (SEA)", "12:15 PM"},
-                    {"BA450", "London (LHR)", "07:00 AM", "Paris (CDG)", "09:20 AM"},
-                    {"AF789", "Paris (CDG)", "01:00 PM", "Rome (FCO)", "03:10 PM"},
-                    {"EK202", "Dubai (DXB)", "11:00 AM", "New York (JFK)", "04:00 PM"}
-            };
+            try {
+                HttpResponse<String> response = HttpClientUtil.sendGetRequest("/flights");
+                System.out.println("API Response: " + response.body()); // Debug log
+                if (response.statusCode() == 200) {
+                    JSONArray flights = new JSONArray(response.body());
+                    for (int i = 0; i < flights.length(); i++) {
+                        JSONObject flight = flights.getJSONObject(i);
+                        String flightNumber = flight.optString("flight_number", flight.optString("flightNumber", "N/A"));
+                        String departureTime = flight.optString("departure_time", flight.optString("departureTime", "N/A"));
+                        String arrivalTime = flight.optString("arrival_time", flight.optString("arrivalTime", "N/A"));
+                        String origin = flight.optString("origin", "N/A");
+                        String destination = flight.optString("destination", "N/A");
 
-            for (Object[] row : data) {
-                model.addRow(row);
+                        model.addRow(new Object[]{flightNumber, departureTime, arrivalTime, origin, destination});
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(this, "Failed to fetch flight data: HTTP " + response.statusCode(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "Error fetching flight data: " + e.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -319,9 +334,9 @@ public class AirlineReservationDashboard extends JFrame {
         int endWidth = sidebarVisible ? sidebarCollapsedWidth : sidebarTargetWidth;
         sidebarVisible = !sidebarVisible;
 
-        updateHamburgerMargin(); // update margin when toggling
+        updateHamburgerMargin();
 
-        slideTimer = new Timer(10, new ActionListener() {
+        slideTimer = new javax.swing.Timer(10, new ActionListener() {
             int step = 0;
             final int totalSteps = 20;
 
@@ -373,7 +388,6 @@ public class AirlineReservationDashboard extends JFrame {
     }
 }
 
-// --- Place this class at the end of the same file ---
 class RoundedButton extends JButton {
     private final int radius;
     private final Color fillColor;
