@@ -90,7 +90,7 @@ public class LoginForm extends JFrame {
             if (response.statusCode() == 200) {
                 messageLabel.setText("Login successful for: " + email);
                 dispose();
-                new HomeForm().setVisible(true);
+                new AirlineReservationDashboard().setVisible(true);
             } else {
                 messageLabel.setText("Login failed: Invalid credentials.");
                 HttpClientUtil.clearAuthCredentials();

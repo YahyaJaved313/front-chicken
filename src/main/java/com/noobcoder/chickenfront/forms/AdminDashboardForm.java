@@ -1,6 +1,6 @@
 package com.noobcoder.chickenfront.forms;
 
-import com.noobcoder.chickenfront.forms.HomeForm;
+import com.noobcoder.chickenfront.forms.AirlineReservationDashboard;
 import com.noobcoder.chickenfront.forms.ButtonEffects;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -55,7 +55,7 @@ public class AdminDashboardForm extends JFrame {
                 case "Back to Home" -> btn.addActionListener(e -> {
                     dispose();
                     HttpClientUtil.clearAuthCredentials();
-                    new HomeForm().setVisible(true);
+                    new AirlineReservationDashboard().setVisible(true);
                 });
             }
         }

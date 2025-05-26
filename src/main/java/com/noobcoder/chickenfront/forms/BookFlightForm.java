@@ -185,7 +185,7 @@ public class BookFlightForm extends JFrame {
 
     private void goToHome() {
         dispose();
-        new HomeForm().setVisible(true);
+        new AirlineReservationDashboard().setVisible(true);
     }
 
     public static void main(String[] args) {
