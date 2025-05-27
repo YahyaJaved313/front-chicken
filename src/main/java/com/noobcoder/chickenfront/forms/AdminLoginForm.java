@@ -84,6 +84,7 @@ public class AdminLoginForm extends JFrame {
             HttpResponse<String> response = HttpClientUtil.sendGetRequest("/admin/flights");
             if (response.statusCode() == 200) {
                 messageLabel.setText("Admin login successful!");
+                AdminDashboardForm.setLoggedIn(true);
                 dispose();
                 new AdminDashboardForm().setVisible(true);
             } else {

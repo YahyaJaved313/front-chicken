@@ -21,6 +21,11 @@ public class HttpClientUtil {
         authHeader = null;
     }
 
+    // Added getter to safely check authHeader state
+    public static boolean isAuthHeaderSet() {
+        return authHeader != null;
+    }
+
     public static HttpResponse<String> sendGetRequest(String endpoint) throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + endpoint))
