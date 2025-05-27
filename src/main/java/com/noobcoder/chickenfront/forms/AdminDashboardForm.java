@@ -1,97 +1,354 @@
 package com.noobcoder.chickenfront.forms;
 
-import com.noobcoder.chickenfront.forms.AirlineReservationDashboard;
-import com.noobcoder.chickenfront.forms.ButtonEffects;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
-import java.net.URI;
-import java.net.http.*;
+import java.awt.event.*;
+import java.awt.geom.RoundRectangle2D;
+import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Base64;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import com.noobcoder.chickenfront.util.HttpClientUtil;
 
 public class AdminDashboardForm extends JFrame {
+    private JPanel sidebarPanel;
+    private JPanel mainPanel;
+    private JPanel contentPanel;
+    private JPanel headerPanel;
+    private boolean sidebarVisible = true;
+    private javax.swing.Timer slideTimer;
+    private int sidebarTargetWidth = 250;
+    private int sidebarCollapsedWidth = 50;
+    private int sidebarCurrentWidth = 250;
     private JTable flightTable;
     private DefaultTableModel tableModel;
     private JLabel messageLabel;
+    private JLabel sidebarTitleLabel;
+
+    // Custom Colors (matching AirlineReservationDashboard)
+    private final Color PRIMARY_BLUE = new Color(41, 128, 185);
+    private final Color SECONDARY_BLUE = new Color(52, 152, 219);
+    private final Color LIGHT_BLUE = new Color(174, 214, 241);
+    private final Color DARK_BLUE = new Color(23, 32, 42);
+    private final Color BACKGROUND_COLOR = new Color(248, 249, 250);
+    private final Color WHITE = Color.WHITE;
+    private final Color HOVER_COLOR = new Color(233, 247, 254);
+
+    // Static flag to persist login session
+    private static boolean isLoggedIn = false;
 
     public AdminDashboardForm() {
-        HttpClientUtil.setAuthCredentials("admin@example.com", "admin123");
+        initializeFrame();
+        createComponents();
+        setupLayout();
+        loadFlights();
+        setVisible(true);
+    }
 
+    private void initializeFrame() {
         setTitle("AMS - Admin Dashboard");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(700, 500);
-        setLocationRelativeTo(null);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setMinimumSize(new Dimension(1000, 600));
+        getContentPane().setBackground(BACKGROUND_COLOR);
+    }
 
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(new Color(15, 20, 22));
+    private void createComponents() {
+        setLayout(new BorderLayout());
+        createSidebar();
+        createMainContent();
+    }
 
-        String[] columns = {"Flight Number", "Origin", "Destination", "Date", "Departure", "Arrival"};
-        tableModel = new DefaultTableModel(columns, 0);
-        flightTable = new JTable(tableModel);
-        JScrollPane tablePane = new JScrollPane(flightTable);
-        mainPanel.add(tablePane, BorderLayout.CENTER);
+    private void createSidebar() {
+        sidebarPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        messageLabel = new JLabel(" ", SwingConstants.CENTER);
-        messageLabel.setForeground(Color.WHITE);
-        mainPanel.add(messageLabel, BorderLayout.SOUTH);
+                GradientPaint gradient = new GradientPaint(
+                        0, 0, PRIMARY_BLUE,
+                        0, getHeight(), new Color(52, 73, 94)
+                );
+                g2d.setPaint(gradient);
 
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setBackground(new Color(15, 20, 22));
-        String[] actions = {"Add Flight", "Modify Flight", "Delete Flight", "Back to Home"};
-        for (String action : actions) {
-            JButton btn = new JButton(action);
-            ButtonEffects.applySlideOutEffect(btn);
-            buttonPanel.add(btn);
-
-            switch (action) {
-                case "Add Flight" -> btn.addActionListener(e -> addOrModifyFlight(false));
-                case "Modify Flight" -> btn.addActionListener(e -> addOrModifyFlight(true));
-                case "Delete Flight" -> btn.addActionListener(e -> deleteFlight());
-                case "Back to Home" -> btn.addActionListener(e -> {
-                    dispose();
-                    HttpClientUtil.clearAuthCredentials();
-                    new AirlineReservationDashboard().setVisible(true);
-                });
+                RoundRectangle2D roundedRect = new RoundRectangle2D.Float(
+                        0, 0, getWidth(), getHeight(), 20, 20
+                );
+                g2d.fill(roundedRect);
+                g2d.dispose();
             }
+        };
+        sidebarPanel.setPreferredSize(new Dimension(sidebarTargetWidth, 0));
+        sidebarPanel.setLayout(new BorderLayout());
+        sidebarPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
+
+        headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
+        headerPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        sidebarTitleLabel = new JLabel("AMS");
+        sidebarTitleLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        sidebarTitleLabel.setForeground(WHITE);
+        sidebarTitleLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        sidebarTitleLabel.setPreferredSize(new Dimension(60, 40));
+
+        JButton hamburgerBtn = createHamburgerButton();
+        hamburgerBtn.setPreferredSize(new Dimension(40, 40));
+        hamburgerBtn.setMaximumSize(new Dimension(40, 40));
+
+        headerPanel.add(sidebarTitleLabel, BorderLayout.WEST);
+        headerPanel.add(hamburgerBtn, BorderLayout.EAST);
+
+        JPanel navPanel = createNavigationPanel();
+        JPanel bottomPanel = createBottomPanel();
+
+        sidebarPanel.add(headerPanel, BorderLayout.NORTH);
+        sidebarPanel.add(navPanel, BorderLayout.CENTER);
+        sidebarPanel.add(bottomPanel, BorderLayout.SOUTH);
+    }
+
+    private void updateHamburgerMargin() {
+        int leftPad = sidebarVisible ? 10 : 14;
+        headerPanel.setBorder(new EmptyBorder(10, leftPad, 10, 10));
+        headerPanel.revalidate();
+        headerPanel.repaint();
+    }
+
+    private JButton createHamburgerButton() {
+        CustomStyledButton btn = new CustomStyledButton("", 30, PRIMARY_BLUE, WHITE, 2);
+        btn.setPreferredSize(new Dimension(40, 40));
+        btn.setMaximumSize(new Dimension(40, 40));
+        btn.setFont(new Font("Arial", Font.BOLD, 20));
+        btn.setForeground(WHITE);
+
+        try {
+            ImageIcon icon = new ImageIcon(getClass().getResource("/icons/hamburger.png"));
+            btn.setIcon(new ImageIcon(icon.getImage().getScaledInstance(28, 28, Image.SCALE_SMOOTH)));
+        } catch (Exception e) {
+            System.out.println("Failed to load hamburger.png: " + e.getMessage());
+            btn.setText("☰");
         }
 
-        mainPanel.add(buttonPanel, BorderLayout.NORTH);
-        add(mainPanel);
-        loadFlights();
+        btn.addActionListener(e -> toggleSidebar());
+        return btn;
+    }
+
+    private JPanel createNavigationPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setOpaque(false);
+        panel.setBorder(new EmptyBorder(30, 0, 0, 0));
+
+        String[] buttonTexts = {
+                "Add Flight",
+                "Modify Flight",
+                "Delete Flight",
+                "Customer Dashboard"
+        };
+
+        for (String text : buttonTexts) {
+            JButton btn = createNavButton(text);
+            panel.add(btn);
+            panel.add(Box.createVerticalStrut(25));
+        }
+        panel.remove(panel.getComponentCount() - 1);
+        return panel;
+    }
+
+    private JButton createNavButton(String text) {
+        CustomStyledButton btn = new CustomStyledButton(text, 30, PRIMARY_BLUE, WHITE, 2);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btn.setMaximumSize(new Dimension(200, 45));
+
+        btn.addActionListener(e -> {
+            switch (text) {
+                case "Add Flight" -> addOrModifyFlight(false);
+                case "Modify Flight" -> addOrModifyFlight(true);
+                case "Delete Flight" -> deleteFlight();
+                case "Customer Dashboard" -> {
+                    dispose();
+                    new AirlineReservationDashboard().setVisible(true);
+                }
+            }
+        });
+
+        return btn;
+    }
+
+    private JPanel createBottomPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        panel.setOpaque(false);
+
+        CustomStyledButton logoutBtn = new CustomStyledButton("Logout", 30, PRIMARY_BLUE, WHITE, 2);
+        logoutBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        logoutBtn.addActionListener(e -> {
+            isLoggedIn = false;
+            HttpClientUtil.clearAuthCredentials();
+            dispose();
+            new AdminLoginForm().setVisible(true);
+        });
+
+        panel.add(logoutBtn);
+        return panel;
+    }
+
+    private void createMainContent() {
+        mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(BACKGROUND_COLOR);
+        mainPanel.setBorder(new EmptyBorder(30, 30, 30, 30));
+
+        JLabel headerLabel = new JLabel("Admin Dashboard");
+        headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 32));
+        headerLabel.setForeground(DARK_BLUE);
+        headerLabel.setBorder(new EmptyBorder(0, 0, 30, 0));
+
+        JPanel tablePanel = createTablePanel();
+
+        mainPanel.add(headerLabel, BorderLayout.NORTH);
+        mainPanel.add(tablePanel, BorderLayout.CENTER);
+
+        messageLabel = new JLabel(" ", SwingConstants.CENTER);
+        messageLabel.setForeground(DARK_BLUE);
+        mainPanel.add(messageLabel, BorderLayout.SOUTH);
+
+        contentPanel = new JPanel(new BorderLayout());
+        contentPanel.add(mainPanel, BorderLayout.CENTER);
+    }
+
+    private JPanel createTablePanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(WHITE);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(230, 230, 230), 1),
+                new EmptyBorder(20, 20, 20, 20)
+        ));
+
+        JLabel tableTitle = new JLabel("Flight Schedule");
+        tableTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        tableTitle.setForeground(DARK_BLUE);
+        tableTitle.setBorder(new EmptyBorder(0, 0, 20, 0));
+
+        String[] columns = {"Flight Number", "Origin", "Destination", "Departure", "Arrival"};
+        tableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        flightTable = new JTable(tableModel);
+        styleTable(flightTable);
+
+        JScrollPane scrollPane = new JScrollPane(flightTable);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getViewport().setBackground(WHITE);
+
+        panel.add(tableTitle, BorderLayout.NORTH);
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    private void styleTable(JTable table) {
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        table.setRowHeight(45);
+        table.setShowGrid(false);
+        table.setIntercellSpacing(new Dimension(0, 1));
+        table.setSelectionBackground(new Color(233, 247, 254));
+        table.setSelectionForeground(DARK_BLUE);
+
+        JTableHeader header = table.getTableHeader();
+        header.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        header.setBackground(PRIMARY_BLUE);
+        header.setForeground(WHITE);
+        header.setPreferredSize(new Dimension(0, 50));
+        header.setBorder(BorderFactory.createEmptyBorder());
+
+        DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+                if (!isSelected) {
+                    if (row % 2 == 0) {
+                        c.setBackground(WHITE);
+                    } else {
+                        c.setBackground(new Color(245, 245, 245));
+                    }
+                }
+
+                setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
+                return c;
+            }
+        };
+
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setCellRenderer(renderer);
+        }
     }
 
     private void loadFlights() {
         try {
-            HttpResponse<String> res = HttpClientUtil.sendGetRequest("/api/admin/flights");
+            // Debug: Check authentication state
+            System.out.println("isLoggedIn: " + isLoggedIn);
+            System.out.println("authHeader: " + (HttpClientUtil.isAuthHeaderSet() ? "Set" : "Null"));
+
+            if (!isLoggedIn) {
+                messageLabel.setText("Not logged in. Redirecting to login...");
+                System.out.println("Redirecting due to isLoggedIn = false");
+                dispose();
+                new AdminLoginForm().setVisible(true);
+                return;
+            }
+
+            HttpResponse<String> res = HttpClientUtil.sendGetRequest("/admin/flights");
+            System.out.println("API Response Status: " + res.statusCode());
+            System.out.println("API Response Body: " + res.body());
+
             if (res.statusCode() == 200) {
                 tableModel.setRowCount(0);
                 JSONArray flights = new JSONArray(res.body());
-                DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm");
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
                 for (int i = 0; i < flights.length(); i++) {
                     JSONObject f = flights.getJSONObject(i);
-                    LocalDateTime dep = LocalDateTime.parse(f.getString("departureTime"));
-                    LocalDateTime arr = LocalDateTime.parse(f.getString("arrivalTime"));
+                    LocalDateTime departure = LocalDateTime.parse(f.getString("departureTime"));
+                    LocalDateTime arrival = LocalDateTime.parse(f.getString("arrivalTime"));
+
                     tableModel.addRow(new Object[]{
                             f.getString("flightNumber"),
                             f.getString("origin"),
                             f.getString("destination"),
-                            dep.toLocalDate().toString(),
-                            dep.format(fmt),
-                            arr.format(fmt)
+                            departure.format(formatter),
+                            arrival.format(formatter)
                     });
                 }
                 messageLabel.setText("Flights loaded: " + flights.length());
+            } else if (res.statusCode() == 401) {
+                messageLabel.setText("Unauthorized: Please log in again.");
+                System.out.println("Unauthorized: API returned 401");
+                isLoggedIn = false;
+                HttpClientUtil.clearAuthCredentials();
+                dispose();
+                new AdminLoginForm().setVisible(true);
             } else {
-                messageLabel.setText("Failed to load flights: " + res.statusCode());
+                messageLabel.setText("Failed to load flights: HTTP " + res.statusCode());
+                System.out.println("Failed to load flights: HTTP " + res.statusCode());
             }
         } catch (Exception e) {
             e.printStackTrace();
-            messageLabel.setText("Error loading flights.");
+            messageLabel.setText("Error loading flights: " + e.getMessage());
+            System.out.println("Exception in loadFlights: " + e.getMessage());
         }
     }
 
@@ -105,48 +362,50 @@ public class AdminDashboardForm extends JFrame {
         JTextField flightNumberField = new JTextField(isModify ? tableModel.getValueAt(row, 0).toString() : "", 10);
         JTextField originField = new JTextField(isModify ? tableModel.getValueAt(row, 1).toString() : "", 10);
         JTextField destinationField = new JTextField(isModify ? tableModel.getValueAt(row, 2).toString() : "", 10);
-        JTextField dateField = new JTextField(isModify ? tableModel.getValueAt(row, 3).toString() : "", 10);
-        JTextField depTimeField = new JTextField(isModify ? tableModel.getValueAt(row, 4).toString() : "", 10);
-        JTextField arrTimeField = new JTextField(isModify ? tableModel.getValueAt(row, 5).toString() : "", 10);
+        JTextField departureField = new JTextField(isModify ? tableModel.getValueAt(row, 3).toString() : "", 10);
+        JTextField arrivalField = new JTextField(isModify ? tableModel.getValueAt(row, 4).toString() : "", 10);
 
-        JPanel panel = new JPanel(new GridLayout(6, 2));
+        JPanel panel = new JPanel(new GridLayout(5, 2));
         panel.add(new JLabel("Flight #:")); panel.add(flightNumberField);
         panel.add(new JLabel("Origin:")); panel.add(originField);
         panel.add(new JLabel("Destination:")); panel.add(destinationField);
-        panel.add(new JLabel("Date (YYYY-MM-DD):")); panel.add(dateField);
-        panel.add(new JLabel("Departure Time (HH:MM):")); panel.add(depTimeField);
-        panel.add(new JLabel("Arrival Time (HH:MM):")); panel.add(arrTimeField);
+        panel.add(new JLabel("Departure (YYYY-MM-DD HH:MM):")); panel.add(departureField);
+        panel.add(new JLabel("Arrival (YYYY-MM-DD HH:MM):")); panel.add(arrivalField);
 
         int result = JOptionPane.showConfirmDialog(this, panel, (isModify ? "Modify" : "Add") + " Flight", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
             try {
-                String dtDep = dateField.getText() + "T" + depTimeField.getText() + ":00";
-                String dtArr = dateField.getText() + "T" + arrTimeField.getText() + ":00";
+                // Convert input format (YYYY-MM-DD HH:MM) to API format (YYYY-MM-DDTHH:MM:SS)
+                DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+                DateTimeFormatter apiFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+                LocalDateTime departure = LocalDateTime.parse(departureField.getText(), inputFormatter);
+                LocalDateTime arrival = LocalDateTime.parse(arrivalField.getText(), inputFormatter);
+
                 JSONObject json = new JSONObject()
                         .put("flightNumber", flightNumberField.getText())
                         .put("origin", originField.getText())
                         .put("destination", destinationField.getText())
-                        .put("departureTime", dtDep)
-                        .put("arrivalTime", dtArr);
+                        .put("departureTime", departure.format(apiFormatter))
+                        .put("arrivalTime", arrival.format(apiFormatter));
 
                 if (isModify) {
-                    HttpResponse<String> getResp = HttpClientUtil.sendGetRequest("/api/admin/flights/" + flightNumberField.getText());
+                    HttpResponse<String> getResp = HttpClientUtil.sendGetRequest("/admin/flights/" + flightNumberField.getText());
                     JSONObject existing = new JSONObject(getResp.body());
                     json.put("totalSeats", existing.getInt("totalSeats"));
                     json.put("availableSeats", existing.getInt("availableSeats"));
 
-                    HttpResponse<String> putResp = HttpClientUtil.sendPutRequest("/api/admin/flights/" + flightNumberField.getText(), json.toString());
-                    messageLabel.setText(putResp.statusCode() == 200 ? "Modified successfully." : "Modify failed.");
+                    HttpResponse<String> putResp = HttpClientUtil.sendPutRequest("/admin/flights/" + flightNumberField.getText(), json.toString());
+                    messageLabel.setText(putResp.statusCode() == 200 ? "Modified successfully." : "Modify failed: HTTP " + putResp.statusCode());
                 } else {
                     json.put("totalSeats", 100);
                     json.put("availableSeats", 100);
-                    HttpResponse<String> postResp = HttpClientUtil.sendPostRequest("/api/admin/flights", json.toString());
-                    messageLabel.setText(postResp.statusCode() == 200 ? "Added successfully." : "Add failed.");
+                    HttpResponse<String> postResp = HttpClientUtil.sendPostRequest("/admin/flights", json.toString());
+                    messageLabel.setText(postResp.statusCode() == 200 ? "Added successfully." : "Add failed: HTTP " + postResp.statusCode());
                 }
-                loadFlights();
+                loadFlights(); // Auto-update table
             } catch (Exception e) {
                 e.printStackTrace();
-                messageLabel.setText("Error processing flight.");
+                messageLabel.setText("Error processing flight: " + e.getMessage());
             }
         }
     }
@@ -161,70 +420,77 @@ public class AdminDashboardForm extends JFrame {
         int confirm = JOptionPane.showConfirmDialog(this, "Delete flight " + fn + "?", "Confirm", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
             try {
-                HttpResponse<String> res = HttpClientUtil.sendDeleteRequest("/api/admin/flights/" + fn);
-                messageLabel.setText(res.statusCode() == 200 ? "Deleted successfully." : "Delete failed.");
-                loadFlights();
+                HttpResponse<String> res = HttpClientUtil.sendDeleteRequest("/admin/flights/" + fn);
+                messageLabel.setText(res.statusCode() == 200 ? "Deleted successfully." : "Delete failed: HTTP " + res.statusCode());
+                loadFlights(); // Auto-update table
             } catch (Exception e) {
                 e.printStackTrace();
-                messageLabel.setText("Delete error.");
+                messageLabel.setText("Delete error: " + e.getMessage());
             }
         }
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new AdminDashboardForm().setVisible(true));
+    private void toggleSidebar() {
+        if (slideTimer != null && slideTimer.isRunning()) {
+            slideTimer.stop();
+        }
+
+        int startWidth = sidebarCurrentWidth;
+        int endWidth = sidebarVisible ? sidebarCollapsedWidth : sidebarTargetWidth;
+        sidebarVisible = !sidebarVisible;
+
+        updateHamburgerMargin();
+
+        slideTimer = new javax.swing.Timer(10, new ActionListener() {
+            int step = 0;
+            final int totalSteps = 20;
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                step++;
+                double progress = (double) step / totalSteps;
+                progress = 1 - Math.pow(1 - progress, 3);
+
+                sidebarCurrentWidth = (int) (startWidth + (endWidth - startWidth) * progress);
+                sidebarPanel.setPreferredSize(new Dimension(sidebarCurrentWidth, 0));
+
+                for (Component comp : sidebarPanel.getComponents()) {
+                    if (comp != null && comp != sidebarPanel.getComponent(0)) {
+                        comp.setVisible(sidebarCurrentWidth > sidebarCollapsedWidth + 10);
+                    }
+                }
+                if (sidebarTitleLabel != null) {
+                    sidebarTitleLabel.setVisible(sidebarCurrentWidth > sidebarCollapsedWidth + 10);
+                }
+
+                revalidate();
+                repaint();
+
+                if (step >= totalSteps) {
+                    slideTimer.stop();
+                }
+            }
+        });
+
+        slideTimer.start();
     }
 
-    // ✅ Embedded HttpClientUtil class
-    private static class HttpClientUtil {
-        private static String baseUrl = "http://localhost:8080";
-        private static String authHeader = "";
+    private void setupLayout() {
+        add(sidebarPanel, BorderLayout.WEST);
+        add(contentPanel, BorderLayout.CENTER);
+    }
 
-        public static void setAuthCredentials(String email, String password) {
-            String encoded = Base64.getEncoder().encodeToString((email + ":" + password).getBytes());
-            authHeader = "Basic " + encoded;
+    public static void setLoggedIn(boolean status) {
+        isLoggedIn = status;
+    }
+
+    public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+        } catch (Exception e) {
+            // Use default look and feel
         }
 
-        public static void clearAuthCredentials() {
-            authHeader = "";
-        }
-
-        public static HttpResponse<String> sendGetRequest(String path) throws Exception {
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(new URI(baseUrl + path))
-                    .GET()
-                    .header("Authorization", authHeader)
-                    .build();
-            return HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
-        }
-
-        public static HttpResponse<String> sendPostRequest(String path, String body) throws Exception {
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(new URI(baseUrl + path))
-                    .POST(HttpRequest.BodyPublishers.ofString(body))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", authHeader)
-                    .build();
-            return HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
-        }
-
-        public static HttpResponse<String> sendPutRequest(String path, String body) throws Exception {
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(new URI(baseUrl + path))
-                    .PUT(HttpRequest.BodyPublishers.ofString(body))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", authHeader)
-                    .build();
-            return HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
-        }
-
-        public static HttpResponse<String> sendDeleteRequest(String path) throws Exception {
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(new URI(baseUrl + path))
-                    .DELETE()
-                    .header("Authorization", authHeader)
-                    .build();
-            return HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
-        }
+        SwingUtilities.invokeLater(() -> new AdminDashboardForm().setVisible(true));
     }
 }
