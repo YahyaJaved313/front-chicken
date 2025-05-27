@@ -16,68 +16,77 @@ public class RegisterForm extends JFrame {
     private JButton backButton;
     private LoginForm loginForm;
 
+    // Theme colors from LoginForm (matching AdminDashboardForm)
+    private final Color PRIMARY_BLUE = new Color(41, 128, 185);
+    private final Color DARK_BLUE = new Color(23, 32, 42);
+    private final Color BACKGROUND_COLOR = new Color(248, 249, 250);
+    private final Color WHITE = Color.WHITE;
+
     public RegisterForm(LoginForm loginForm) {
         this.loginForm = loginForm;
         setTitle("AMS - Register");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(400, 400);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(new Color(15, 20, 22));
+        getContentPane().setBackground(BACKGROUND_COLOR); // Updated to match LoginForm
 
         JPanel mainPanel = new JPanel(new GridLayout(6, 1, 20, 20));
-        mainPanel.setBackground(new Color(15, 20, 22));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        mainPanel.setBackground(BACKGROUND_COLOR); // Updated to match LoginForm
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30)); // Updated padding to match LoginForm
 
         JLabel titleLabel = new JLabel("Register", SwingConstants.CENTER);
-        titleLabel.setForeground(Color.WHITE);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        titleLabel.setForeground(DARK_BLUE); // Updated to match LoginForm
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 32)); // Updated to match LoginForm
         mainPanel.add(titleLabel);
 
         JPanel usernamePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        usernamePanel.setBackground(new Color(15, 20, 22));
+        usernamePanel.setBackground(BACKGROUND_COLOR); // Updated to match LoginForm
         JLabel usernameLabel = new JLabel("Username:");
-        usernameLabel.setForeground(Color.WHITE);
-        usernameLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        usernameLabel.setForeground(DARK_BLUE); // Updated to match LoginForm
+        usernameLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Updated to match LoginForm
         usernameField = new JTextField(15);
+        usernameField.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Consistent font for input
         usernamePanel.add(usernameLabel);
         usernamePanel.add(usernameField);
         mainPanel.add(usernamePanel);
 
         JPanel emailPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        emailPanel.setBackground(new Color(15, 20, 22));
+        emailPanel.setBackground(BACKGROUND_COLOR); // Updated to match LoginForm
         JLabel emailLabel = new JLabel("Email:");
-        emailLabel.setForeground(Color.WHITE);
-        emailLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        emailLabel.setForeground(DARK_BLUE); // Updated to match LoginForm
+        emailLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Updated to match LoginForm
         emailField = new JTextField(15);
+        emailField.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Consistent font for input
         emailPanel.add(emailLabel);
         emailPanel.add(emailField);
         mainPanel.add(emailPanel);
 
         JPanel passwordPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        passwordPanel.setBackground(new Color(15, 20, 22));
+        passwordPanel.setBackground(BACKGROUND_COLOR); // Updated to match LoginForm
         JLabel passwordLabel = new JLabel("Password:");
-        passwordLabel.setForeground(Color.WHITE);
-        passwordLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        passwordLabel.setForeground(DARK_BLUE); // Updated to match LoginForm
+        passwordLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Updated to match LoginForm
         passwordField = new JPasswordField(15);
+        passwordField.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Consistent font for input
         passwordPanel.add(passwordLabel);
         passwordPanel.add(passwordField);
         mainPanel.add(passwordPanel);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        buttonPanel.setBackground(new Color(15, 20, 22));
-        registerButton = new JButton("Register");
-        ButtonEffects.applySlideOutEffect(registerButton);
+        buttonPanel.setBackground(BACKGROUND_COLOR); // Updated to match LoginForm
+        registerButton = new CustomStyledButton("Register", 30, PRIMARY_BLUE, WHITE, 2); // Updated to match LoginForm
+        registerButton.setFont(new Font("Segoe UI", Font.BOLD, 14)); // Updated to match LoginForm
         registerButton.addActionListener(e -> register());
-        backButton = new JButton("Back to Login");
-        ButtonEffects.applySlideOutEffect(backButton);
+        backButton = new CustomStyledButton("Back to Login", 30, PRIMARY_BLUE, WHITE, 2); // Updated to match LoginForm
+        backButton.setFont(new Font("Segoe UI", Font.BOLD, 14)); // Updated to match LoginForm
         backButton.addActionListener(e -> goToLogin());
         buttonPanel.add(registerButton);
         buttonPanel.add(backButton);
         mainPanel.add(buttonPanel);
 
         messageLabel = new JLabel("", SwingConstants.CENTER);
-        messageLabel.setForeground(Color.WHITE);
-        messageLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        messageLabel.setForeground(DARK_BLUE); // Updated to match LoginForm
+        messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Updated to match LoginForm
         mainPanel.add(messageLabel);
 
         add(mainPanel);
