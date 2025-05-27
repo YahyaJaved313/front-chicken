@@ -2,6 +2,7 @@ package com.noobcoder.chickenfront.forms;
 
 import javax.swing.*;
 import java.awt.*;
+import com.noobcoder.chickenfront.forms.AirlineReservationDashboard;
 
 public class FlightStatusForm extends JFrame {
     // Theme colors
@@ -126,6 +127,7 @@ public class FlightStatusForm extends JFrame {
 
     private void goToHome() {
         dispose();
+        new AirlineReservationDashboard().setVisible(true);
         // Uncomment and implement this if you have a dashboard to go back to
         // new AirlineReservationDashboard().setVisible(true);
     }
