@@ -32,6 +32,12 @@ public class FlightSearchForm extends JFrame {
     private JButton showAllButton;
     private JButton backButton;
 
+    // Theme colors from AdminDashboardForm
+    private final Color PRIMARY_BLUE = new Color(41, 128, 185);
+    private final Color DARK_BLUE = new Color(23, 32, 42);
+    private final Color BACKGROUND_COLOR = new Color(248, 249, 250);
+    private final Color WHITE = Color.WHITE;
+
     public FlightSearchForm() {
         // Set authentication credentials (using provided admin credentials)
         try {
@@ -49,39 +55,42 @@ public class FlightSearchForm extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(600, 400);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(new Color(15, 20, 22));
+        getContentPane().setBackground(BACKGROUND_COLOR); // Updated to match AdminDashboardForm
 
         JPanel mainPanel = new JPanel(new GridLayout(4, 1, 20, 20));
-        mainPanel.setBackground(new Color(15, 20, 22));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        mainPanel.setBackground(BACKGROUND_COLOR); // Updated to match AdminDashboardForm
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30)); // Updated padding to match AdminDashboardForm
 
         JLabel titleLabel = new JLabel("Search Flights", SwingConstants.CENTER);
-        titleLabel.setForeground(Color.WHITE);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        titleLabel.setForeground(DARK_BLUE); // Updated to match AdminDashboardForm
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 32)); // Updated to match AdminDashboardForm
         mainPanel.add(titleLabel);
 
         JPanel inputPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        inputPanel.setBackground(new Color(15, 20, 22));
+        inputPanel.setBackground(BACKGROUND_COLOR); // Updated to match AdminDashboardForm
         JLabel departureLabel = new JLabel("Departure:");
-        departureLabel.setForeground(Color.WHITE);
-        departureLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        departureLabel.setForeground(DARK_BLUE); // Updated to match AdminDashboardForm
+        departureLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Updated to match AdminDashboardForm
         departureField = new JTextField(10);
+        departureField.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Consistent font for input
         JLabel destinationLabel = new JLabel("Destination:");
-        destinationLabel.setForeground(Color.WHITE);
-        destinationLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        destinationLabel.setForeground(DARK_BLUE); // Updated to match AdminDashboardForm
+        destinationLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Updated to match AdminDashboardForm
         destinationField = new JTextField(10);
+        destinationField.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Consistent font for input
         JLabel dateLabel = new JLabel("Date:");
-        dateLabel.setForeground(Color.WHITE);
-        dateLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        dateLabel.setForeground(DARK_BLUE); // Updated to match AdminDashboardForm
+        dateLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Updated to match AdminDashboardForm
         // Use SpinnerDateModel with a Date object
         Date currentDate = Date.from(LocalDate.of(2025, 5, 26).atStartOfDay(ZoneId.systemDefault()).toInstant());
         datePicker = new JSpinner(new SpinnerDateModel(currentDate, null, null, java.util.Calendar.DAY_OF_MONTH));
+        datePicker.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Consistent font for spinner
         JSpinner.DateEditor dateEditor = new JSpinner.DateEditor(datePicker, "yyyy-MM-dd");
         datePicker.setEditor(dateEditor);
         // Log initial date picker value
         System.err.println("Initial date picker value: " + ((JSpinner.DateEditor) datePicker.getEditor()).getFormat().format(datePicker.getValue()));
-        searchButton = new JButton("Search");
-        ButtonEffects.applySlideOutEffect(searchButton);
+        searchButton = new CustomStyledButton("Search", 30, PRIMARY_BLUE, WHITE, 2); // Updated to match AdminDashboardForm
+        searchButton.setFont(new Font("Segoe UI", Font.BOLD, 14)); // Updated to match AdminDashboardForm
         searchButton.addActionListener(e -> {
             System.err.println("Search button clicked");
             try {
@@ -92,8 +101,8 @@ public class FlightSearchForm extends JFrame {
                 JOptionPane.showMessageDialog(this, "Unexpected error in Search Flights: " + ex.getMessage());
             }
         });
-        showAllButton = new JButton("Show All Flights");
-        ButtonEffects.applySlideOutEffect(showAllButton);
+        showAllButton = new CustomStyledButton("Show All Flights", 30, PRIMARY_BLUE, WHITE, 2); // Updated to match AdminDashboardForm
+        showAllButton.setFont(new Font("Segoe UI", Font.BOLD, 14)); // Updated to match AdminDashboardForm
         showAllButton.addActionListener(e -> {
             System.err.println("Show All button clicked");
             try {
@@ -117,14 +126,15 @@ public class FlightSearchForm extends JFrame {
         String[] columns = {"Flight Number", "Departure", "Destination", "Date", "Dep Time", "Arr Time"};
         tableModel = new DefaultTableModel(columns, 0);
         flightTable = new JTable(tableModel);
-        flightTable.setBackground(new Color(255, 255, 255, 13));
+        flightTable.setBackground(BACKGROUND_COLOR); // Updated to match AdminDashboardForm
+        flightTable.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Consistent font for table
         JScrollPane tableScrollPane = new JScrollPane(flightTable);
         mainPanel.add(tableScrollPane);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        buttonPanel.setBackground(new Color(15, 20, 22));
-        backButton = new JButton("Back to Home");
-        ButtonEffects.applySlideOutEffect(backButton);
+        buttonPanel.setBackground(BACKGROUND_COLOR); // Updated to match AdminDashboardForm
+        backButton = new CustomStyledButton("Back to Home", 30, PRIMARY_BLUE, WHITE, 2); // Updated to match AdminDashboardForm
+        backButton.setFont(new Font("Segoe UI", Font.BOLD, 14)); // Updated to match AdminDashboardForm
         backButton.addActionListener(e -> goToHome());
         buttonPanel.add(backButton);
         mainPanel.add(buttonPanel);

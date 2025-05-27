@@ -2,12 +2,12 @@ package com.noobcoder.chickenfront.forms;
 
 import javax.swing.*;
 import java.awt.*;
-import com.noobcoder.chickenfront.forms.AirlineReservationDashboard;
 
 public class FlightStatusForm extends JFrame {
-    // Theme colors
+    // Theme colors from AdminDashboardForm
     private static final Color PRIMARY_BLUE = new Color(41, 128, 185);
-    private static final Color DARK_BG = new Color(15, 20, 22);
+    private static final Color DARK_BLUE = new Color(23, 32, 42);
+    private static final Color BACKGROUND_COLOR = new Color(248, 249, 250);
     private static final Color WHITE = Color.WHITE;
 
     private JTextField flightNumberField;
@@ -20,62 +20,58 @@ public class FlightStatusForm extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(420, 320);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(DARK_BG);
+        getContentPane().setBackground(BACKGROUND_COLOR);
 
         JPanel mainPanel = new JPanel(new BorderLayout(0, 20));
-        mainPanel.setBackground(DARK_BG);
+        mainPanel.setBackground(BACKGROUND_COLOR);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
         // Title
         JLabel titleLabel = new JLabel("Check Flight Status", SwingConstants.CENTER);
-        titleLabel.setForeground(WHITE);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setForeground(DARK_BLUE);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 32));
         mainPanel.add(titleLabel, BorderLayout.NORTH);
 
         // Center panel for input and status
         JPanel centerPanel = new JPanel();
-        centerPanel.setBackground(DARK_BG);
+        centerPanel.setBackground(BACKGROUND_COLOR);
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
 
         // Input
         JPanel inputPanel = new JPanel();
         inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.X_AXIS));
-        inputPanel.setBackground(DARK_BG);
+        inputPanel.setBackground(BACKGROUND_COLOR);
 
         JLabel flightNumberLabel = new JLabel("Flight Number:");
-        flightNumberLabel.setForeground(WHITE);
-        flightNumberLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        flightNumberField = new JTextField(12);
-        flightNumberField.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        flightNumberField.setBackground(new Color(30, 35, 38));
-        flightNumberField.setForeground(WHITE);
-        flightNumberField.setCaretColor(WHITE);
-        flightNumberField.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(PRIMARY_BLUE, 1),
-                BorderFactory.createEmptyBorder(5, 8, 5, 8)
-        ));
+        flightNumberLabel.setForeground(DARK_BLUE);
+        flightNumberLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        flightNumberField = new JTextField(8); // Kept column size at 8 for width
+        flightNumberField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        flightNumberField.setForeground(DARK_BLUE);
+        flightNumberField.setCaretColor(DARK_BLUE);
+        flightNumberField.setPreferredSize(new Dimension(120, 25)); // Adjusted to make it more horizontal (wider width, shorter height)
 
-        checkButton = new JButton("Check Status");
-        styleButton(checkButton);
+        checkButton = new CustomStyledButton("Check Status", 30, PRIMARY_BLUE, WHITE, 2);
+        checkButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
         checkButton.addActionListener(e -> checkStatus());
 
         inputPanel.add(flightNumberLabel);
         inputPanel.add(Box.createHorizontalStrut(10));
         inputPanel.add(flightNumberField);
-        inputPanel.add(Box.createHorizontalStrut(20)); // Spacing between input and button
+        inputPanel.add(Box.createHorizontalStrut(20));
         inputPanel.add(checkButton);
 
         centerPanel.add(inputPanel);
-        centerPanel.add(Box.createVerticalStrut(30)); // More space before status
+        centerPanel.add(Box.createVerticalStrut(30));
 
         // Status Label centered
         statusLabel = new JLabel("", SwingConstants.CENTER);
-        statusLabel.setForeground(WHITE);
-        statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        statusLabel.setForeground(DARK_BLUE);
+        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         statusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        statusPanel.setBackground(DARK_BG);
+        statusPanel.setBackground(BACKGROUND_COLOR);
         statusPanel.add(statusLabel);
 
         centerPanel.add(statusPanel);
@@ -84,34 +80,14 @@ public class FlightStatusForm extends JFrame {
 
         // Back Button
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        buttonPanel.setBackground(DARK_BG);
-        backButton = new JButton("Back to Home");
-        styleButton(backButton);
+        buttonPanel.setBackground(BACKGROUND_COLOR);
+        backButton = new CustomStyledButton("Back to Home", 30, PRIMARY_BLUE, WHITE, 2);
+        backButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
         backButton.addActionListener(e -> goToHome());
         buttonPanel.add(backButton);
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         add(mainPanel);
-    }
-
-    private void styleButton(JButton button) {
-        button.setBackground(PRIMARY_BLUE);
-        button.setForeground(WHITE);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createEmptyBorder(8, 22, 8, 22));
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setBorder(BorderFactory.createLineBorder(PRIMARY_BLUE, 1, true));
-        button.setContentAreaFilled(true);
-        button.setOpaque(true);
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                button.setBackground(PRIMARY_BLUE.darker());
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                button.setBackground(PRIMARY_BLUE);
-            }
-        });
     }
 
     private void checkStatus() {
@@ -122,14 +98,12 @@ public class FlightStatusForm extends JFrame {
             return;
         }
         statusLabel.setText("Flight " + flightNumber + " is CONFIRMED.");
-        statusLabel.setForeground(new Color(46, 204, 113)); // Green
+        statusLabel.setForeground(DARK_BLUE);
     }
 
     private void goToHome() {
         dispose();
         new AirlineReservationDashboard().setVisible(true);
-        // Uncomment and implement this if you have a dashboard to go back to
-        // new AirlineReservationDashboard().setVisible(true);
     }
 
     public static void main(String[] args) {

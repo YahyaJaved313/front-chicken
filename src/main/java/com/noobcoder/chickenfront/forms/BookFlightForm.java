@@ -18,42 +18,52 @@ public class BookFlightForm extends JFrame {
     private JButton bookButton;
     private JButton backButton;
 
+    // Theme colors from AdminDashboardForm
+    private final Color PRIMARY_BLUE = new Color(41, 128, 185);
+    private final Color DARK_BLUE = new Color(23, 32, 42);
+    private final Color BACKGROUND_COLOR = new Color(248, 249, 250);
+    private final Color WHITE = Color.WHITE;
+
     public BookFlightForm() {
         setTitle("AMS - Book a Flight");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(600, 350);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(new Color(15, 20, 22));
+        getContentPane().setBackground(BACKGROUND_COLOR); // Updated to match AdminDashboardForm
 
         JPanel mainPanel = new JPanel(new GridLayout(4, 1, 20, 20));
-        mainPanel.setBackground(new Color(15, 20, 22));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        mainPanel.setBackground(BACKGROUND_COLOR); // Updated to match AdminDashboardForm
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30)); // Updated padding to match AdminDashboardForm
 
         JLabel titleLabel = new JLabel("Book a Flight", SwingConstants.CENTER);
-        titleLabel.setForeground(Color.WHITE);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        titleLabel.setForeground(DARK_BLUE); // Updated to match AdminDashboardForm
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 32)); // Updated to match AdminDashboardForm
         mainPanel.add(titleLabel);
 
         JPanel inputPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        inputPanel.setBackground(new Color(15, 20, 22));
+        inputPanel.setBackground(BACKGROUND_COLOR); // Updated to match AdminDashboardForm
         JLabel flightNumberLabel = new JLabel("Flight Number:");
-        flightNumberLabel.setForeground(Color.WHITE);
-        flightNumberLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        flightNumberLabel.setForeground(DARK_BLUE); // Updated to match AdminDashboardForm
+        flightNumberLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Updated to match AdminDashboardForm
         flightNumberField = new JTextField(10);
+        flightNumberField.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Consistent font for input
         JLabel passengerNameLabel = new JLabel("Passenger Name:");
-        passengerNameLabel.setForeground(Color.WHITE);
-        passengerNameLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        passengerNameLabel.setForeground(DARK_BLUE); // Updated to match AdminDashboardForm
+        passengerNameLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Updated to match AdminDashboardForm
         passengerNameField = new JTextField(10);
+        passengerNameField.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Consistent font for input
         JLabel genderLabel = new JLabel("Gender:");
-        genderLabel.setForeground(Color.WHITE);
-        genderLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        genderLabel.setForeground(DARK_BLUE); // Updated to match AdminDashboardForm
+        genderLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Updated to match AdminDashboardForm
         genderCombo = new JComboBox<>(new String[]{"Male", "Female", "Other"});
+        genderCombo.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Consistent font for combo
         JLabel passportNumberLabel = new JLabel("Passport Number:");
-        passportNumberLabel.setForeground(Color.WHITE);
-        passportNumberLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        passportNumberLabel.setForeground(DARK_BLUE); // Updated to match AdminDashboardForm
+        passportNumberLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Updated to match AdminDashboardForm
         passportNumberField = new JTextField(10);
-        bookButton = new JButton("Book Flight");
-        ButtonEffects.applySlideOutEffect(bookButton);
+        passportNumberField.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Consistent font for input
+        bookButton = new CustomStyledButton("Book Flight", 30, PRIMARY_BLUE, WHITE, 2); // Updated to match AdminDashboardForm
+        bookButton.setFont(new Font("Segoe UI", Font.BOLD, 14)); // Updated to match AdminDashboardForm
         bookButton.addActionListener(e -> bookFlight());
         inputPanel.add(flightNumberLabel);
         inputPanel.add(flightNumberField);
@@ -67,14 +77,14 @@ public class BookFlightForm extends JFrame {
         mainPanel.add(inputPanel);
 
         confirmationLabel = new JLabel("", SwingConstants.CENTER);
-        confirmationLabel.setForeground(Color.WHITE);
-        confirmationLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        confirmationLabel.setForeground(DARK_BLUE); // Updated to match AdminDashboardForm
+        confirmationLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Updated to match AdminDashboardForm
         mainPanel.add(confirmationLabel);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        buttonPanel.setBackground(new Color(15, 20, 22));
-        backButton = new JButton("Back to Home");
-        ButtonEffects.applySlideOutEffect(backButton);
+        buttonPanel.setBackground(BACKGROUND_COLOR); // Updated to match AdminDashboardForm
+        backButton = new CustomStyledButton("Back to Home", 30, PRIMARY_BLUE, WHITE, 2); // Updated to match AdminDashboardForm
+        backButton.setFont(new Font("Segoe UI", Font.BOLD, 14)); // Updated to match AdminDashboardForm
         backButton.addActionListener(e -> goToHome());
         buttonPanel.add(backButton);
         mainPanel.add(buttonPanel);
@@ -94,15 +104,28 @@ public class BookFlightForm extends JFrame {
         }
 
         JComboBox<String> paymentMethodCombo = new JComboBox<>(new String[]{"Credit Card", "Debit Card", "PayPal", "Cash"});
+        paymentMethodCombo.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Consistent font for combo
         JTextField cardNumberField = new JTextField(10);
+        cardNumberField.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Consistent font for input
         JTextField expiryField = new JTextField(5);
+        expiryField.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Consistent font for input
         JTextField cvvField = new JTextField(3);
+        cvvField.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Consistent font for input
         JLabel cardNumberLabel = new JLabel("Card Number:");
+        cardNumberLabel.setForeground(DARK_BLUE); // Updated to match AdminDashboardForm
+        cardNumberLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Updated to match AdminDashboardForm
         JLabel expiryLabel = new JLabel("Expiry (MM/YY):");
+        expiryLabel.setForeground(DARK_BLUE); // Updated to match AdminDashboardForm
+        expiryLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Updated to match AdminDashboardForm
         JLabel cvvLabel = new JLabel("CVV:");
+        cvvLabel.setForeground(DARK_BLUE); // Updated to match AdminDashboardForm
+        cvvLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Updated to match AdminDashboardForm
         JLabel cashMessageLabel = new JLabel("Please pay at the counter.", SwingConstants.CENTER);
+        cashMessageLabel.setForeground(DARK_BLUE); // Updated to match AdminDashboardForm
+        cashMessageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Updated to match AdminDashboardForm
 
         JPanel paymentPanel = new JPanel(new GridLayout(5, 2, 10, 10));
+        paymentPanel.setBackground(BACKGROUND_COLOR); // Updated to match AdminDashboardForm
         paymentPanel.add(new JLabel("Payment Method:"));
         paymentPanel.add(paymentMethodCombo);
         paymentPanel.add(cardNumberLabel);
